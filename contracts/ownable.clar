@@ -5,7 +5,12 @@
 
 (define-read-only (is-owner)
     (ok (is-eq (var-get owner) contract-caller)))
-    ;; modifier onlyOwner() {
-    ;; function isOwner() public view returns (bool) {
-    ;; function renounceOwnership() public onlyOwner {
-    ;; function transferOwnership(address newOwner) public onlyOwner {
+
+(define-read-only (only-owner)
+    (if (is-eq (var-get owner) contract-caller) (ok none) (err 1)))
+
+(define-public (transfer-ownership (new-owner principal))
+    (begin 
+        (asserts! (is-eq (var-get owner) contract-caller) (err 1))
+        (var-set owner new-owner)
+        (ok true)))
