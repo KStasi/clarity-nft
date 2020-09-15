@@ -39,6 +39,22 @@ describe("ownable-lib contract test suite", () => {
       const result = Result.unwrap(receipt);
       assert.equal(result, "S1G2081040G2081040G2081040G208105NK8PE5");
     });
+
+    it("should check owner", async () => {
+      var query = ownableClient.createTransaction({
+        method: {
+          name: "is-owner",
+          args: [],
+        },
+      });
+      query.sender = "S1G2081040G2081040G2081040G208105NK8PE5";
+      const receipt = await ownableClient.submitTransaction(query);
+      const result = Result.unwrap(receipt);
+      assert.equal(
+        result,
+        "Transaction executed and committed. Returned: true\n[]"
+      );
+    });
   });
   after(async () => {
     await provider.close();
