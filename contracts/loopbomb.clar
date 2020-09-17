@@ -20,7 +20,7 @@
 (define-non-fungible-token loopbomb-tokens (buff 32)) ;; identifier is 256-bit hash of image
 (define-data-var mint-price uint u5000000000000000)
 (define-data-var base-token-uri (buff 100) "https://loopbomb.com/assets/api/v2/loop/")
-(define-map loopbombs ((token-id (buff 32))) ((author principal) (date uint)))
+(define-map loopbombs ((token-id (buff 32))) ((author principal) (date uint))) ;; extra info about token related to the nft-token
 
 (define-public (update-base-token-uri (new-base-token-uri (buff 100)))
     (begin 
@@ -40,8 +40,8 @@
 (define-read-only (get-mint-price)
     (var-get mint-price))
 
-(define-read-only (get-token-uri)
-    (var-get base-token-uri))
+(define-read-only (get-token-uri (token-id (buff 32)))
+    (concat (var-get base-token-uri) token-id))
 
 (define-read-only (get-token-info (token-id (buff 32)))
     (map-get? loopbombs ((token-id token-id))))
@@ -49,7 +49,7 @@
 (define-public (create-loopbomb (token-id (buff 32)))
     (begin 
         (as-contract
-            (stx-transfer? (var-get mint-price) tx-sender (var-get owner)))
+            (stx-transfer? (var-get mint-price) tx-sender (var-get owner))) ;; transfer stx if there is enough to pay for mint, otherwith throws an error
         (nft-mint? loopbomb-tokens token-id tx-sender) ;; fails if token has been minted before
         (map-insert loopbombs ((token-id token-id)) ((author tx-sender) (date block-height)))
         (ok true)))
