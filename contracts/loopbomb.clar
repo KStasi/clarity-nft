@@ -5,32 +5,32 @@
     (var-get owner))
 
 (define-read-only (is-owner)
-    (ok (is-eq (var-get owner) contract-caller)))
+    (ok (is-eq (var-get owner) tx-sender)))
 
 (define-read-only (only-owner)
-    (if (is-eq (var-get owner) contract-caller) (ok none) (err 1)))
+    (if (is-eq (var-get owner) tx-sender) (ok none) (err 1)))
 
 (define-public (transfer-ownership (new-owner principal))
     (begin 
-        (asserts! (is-eq (var-get owner) contract-caller) (err 1))
+        (asserts! (is-eq (var-get owner) tx-sender) (err 1))
         (var-set owner new-owner)
         (ok true)))
 
 ;; loopbomb
-(define-non-fungible-token loopbomb-tokens int)
+(define-non-fungible-token loopbomb-tokens (buff 32)) ;; identifier is 256-bit hash of image
 (define-data-var mint-price uint u5000000000000000)
-(define-data-var base-token-uri (buff 100) "https://loopbomb.com/assets/api/v2/loop/1/")
-(define-map loopbombs ((author principal)) ((date uint)))
+(define-data-var base-token-uri (buff 100) "https://loopbomb.com/assets/api/v2/loop/")
+(define-map loopbombs ((token-id (buff 32))) ((author principal) (date uint)))
 
 (define-public (update-base-token-uri (new-base-token-uri (buff 100)))
     (begin 
-        (asserts! (is-eq (var-get owner) contract-caller) (err 1))
+        (asserts! (is-eq (var-get owner) tx-sender) (err 1))
         (var-set base-token-uri new-base-token-uri)
         (ok true)))
 
 (define-public (update-mint-price (new-mint-price uint))
     (begin 
-        (asserts! (is-eq (var-get owner) contract-caller) (err 1))
+        (asserts! (is-eq (var-get owner) tx-sender) (err 1))
         (var-set mint-price new-mint-price)
         (ok true)))
 
@@ -43,27 +43,13 @@
 (define-read-only (get-token-uri)
     (var-get base-token-uri))
 
-    ;; // Management methods
-    ;; function create() public payable returns (uint) {
-    ;;     require(msg.value >= mintPrice, "Not enough ether to mint this token!");
+(define-read-only (get-token-info (token-id (buff 32)))
+    (map-get? loopbombs ((token-id token-id))))
 
-    ;;     if (msg.value > mintPrice) {
-    ;;         msg.sender.transfer(msg.value - mintPrice);
-    ;;     }
-
-    ;;     uint id = loopbombs.push(Loopbomb(msg.sender, block.timestamp)) - 1;
-    ;;     _mint(msg.sender, id);
-    ;;     emit LoopbombCreated(id, msg.sender);
-    ;;     return id;
-    ;; }
-
-    ;; function retrieve(uint256 _id) public view  returns (address, uint256) {
-    ;;     return (loopbombs[_id].author, loopbombs[_id].date);
-    ;; }
-
-    ;; function withdraw() external onlyOwner {
-    ;;     msg.sender.transfer(address(this).balance);
-    ;; }
-
-
-
+(define-public (create-loopbomb (token-id (buff 32)))
+    (begin 
+        (as-contract
+            (stx-transfer? (var-get mint-price) tx-sender (var-get owner)))
+        (nft-mint? loopbomb-tokens token-id tx-sender) ;; fails if token has been minted before
+        (map-insert loopbombs ((token-id token-id)) ((author tx-sender) (date block-height)))
+        (ok true)))
