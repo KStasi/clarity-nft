@@ -17,23 +17,31 @@
         (ok true)))
 
 ;; loopbomb
-(define-non-fungible-token loopbombs int)
+(define-non-fungible-token loopbomb-tokens int)
 (define-data-var mint-price uint u5000000000000000)
-(define-data-var base-token-uri (buff 50) "https://loopbomb.com/assets/api/v2/loop/1/")
+(define-data-var base-token-uri (buff 100) "https://loopbomb.com/assets/api/v2/loop/1/")
+(define-map loopbombs ((author principal)) ((date uint)))
 
-    ;; struct Loopbomb {
-    ;;     address author;
-    ;;     uint256 date;
-    ;; }
+(define-public (update-base-token-uri (new-base-token-uri (buff 100)))
+    (begin 
+        (asserts! (is-eq (var-get owner) contract-caller) (err 1))
+        (var-set base-token-uri new-base-token-uri)
+        (ok true)))
 
-    ;; Loopbomb[] public loopbombs;
+(define-public (update-mint-price (new-mint-price uint))
+    (begin 
+        (asserts! (is-eq (var-get owner) contract-caller) (err 1))
+        (var-set mint-price new-mint-price)
+        (ok true)))
 
-    ;; function tokenURI(uint256 _tokenId) external view returns (string memory) {
-    ;;     return Strings.strConcat(
-    ;;         baseTokenURI(),
-    ;;         Strings.uint2str(_tokenId)
-    ;;     );
-    ;; }
+(define-read-only (get-base-token-uri)
+    (var-get base-token-uri))
+
+(define-read-only (get-mint-price)
+    (var-get mint-price))
+
+(define-read-only (get-token-uri)
+    (var-get base-token-uri))
 
     ;; // Management methods
     ;; function create() public payable returns (uint) {
@@ -53,23 +61,9 @@
     ;;     return (loopbombs[_id].author, loopbombs[_id].date);
     ;; }
 
-    ;; function setBaseTokenURI(string memory _uri) public onlyOwner {
-    ;;     baseTokenUri = _uri;
-    ;; }
-
     ;; function withdraw() external onlyOwner {
     ;;     msg.sender.transfer(address(this).balance);
     ;; }
 
-    ;; function setMintPrice(uint256 _price) external onlyOwner {
-    ;;     mintPrice = _price;
-    ;; }
 
-    ;; function getMintPrice() public view returns (uint256) {
-    ;;     return mintPrice;
-    ;; }
-
-    ;; function baseTokenURI() public view returns (string memory) {
-    ;;     return baseTokenUri;
-    ;; }
 
